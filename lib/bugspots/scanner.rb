@@ -2,7 +2,7 @@ require "rugged"
 
 module Bugspots
   Fix = Struct.new(:message, :date, :files)
-  Spot = Struct.new(:file, :score)
+  Spot = Struct.new(:file, :percentile, :score)
 
   def self.scan(repo, branch = "master", depth = nil, regex = nil, churn = nil)
     regex ||= /\b(fix(es|ed)?|close(s|d)?)\b/i
@@ -53,9 +53,16 @@ module Bugspots
       end
     end
 
-    spots = hotspots.sort_by {|k,v| v}.reverse.collect do |spot|
-      s = Spot.new(spot.first, sprintf('%.4f', spot.last))
-      diff_spots.append(s) if diff.includes(spot.first)
+    sorted_hotspots = hotspots.sort_by {|k,v| v}.reverse.collect
+    top_spot = sorted_hotspots.first
+    rank = 0
+    size = hotspots.size
+
+    spots = sorted_hotspots.each do |spot|
+      percentile = (((size.to_f - rank)/size)*100).round(0)
+      s = Spot.new(spot.first, percentile, sprintf('%.4f', (spot.last/top_spot.last)*100))
+      diff_spots.append(s) if diff.include?(spot.first)
+      rank = rank + 1
       s
     end
 
