@@ -4,14 +4,25 @@ module Bugspots
   Fix = Struct.new(:message, :date, :files)
   Spot = Struct.new(:file, :score)
 
-  def self.scan(repo, branch = "master", depth = nil, regex = nil)
+  def self.scan(repo, branch = "master", depth = nil, regex = nil, churn = nil)
     regex ||= /\b(fix(es|ed)?|close(s|d)?)\b/i
     fixes = []
+    diff = []
+    diff_spots = [];
 
     repo = Rugged::Repository.new(repo)
     unless repo.branches.each_name(:local).sort.find { |b| b == branch }
       raise ArgumentError, "no such branch in the repo: #{branch}"
     end
+
+    pp repo.branches[branch].target
+
+    if churn && !repo.branches.each_name(:local).sort.find { |b| b == churn }
+      raise ArgumentError, "no such branch in the repo: #{churn}"
+    end
+
+    diff = `git diff --name-only origin/master..`.split(/\n/)
+    pp diff
 
     walker = Rugged::Walker.new(repo)
     walker.sorting(Rugged::SORT_TOPO)
@@ -43,9 +54,11 @@ module Bugspots
     end
 
     spots = hotspots.sort_by {|k,v| v}.reverse.collect do |spot|
-      Spot.new(spot.first, sprintf('%.4f', spot.last))
+      s = Spot.new(spot.first, sprintf('%.4f', spot.last))
+      diff_spots.append(s) if diff.includes(spot.first)
+      s
     end
 
-    return fixes, spots
+    return fixes, spots, diff_spots
   end
 end

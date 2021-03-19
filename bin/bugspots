@@ -14,6 +14,11 @@ options = {}
 OptionParser.new do |opts|
   opts.banner = "Usage: bugspots /path/to/git/repo"
 
+  # Option: Churn Branch
+  opts.on('-c', '--churn [name]', 'branch to crawl') do |b|
+    options[:churn] = b.to_s
+  end
+
   # Option: Set Branch
   opts.on('-b', '--branch [name]', 'branch to crawl') do |b|
     options[:branch] = b.to_s
@@ -46,7 +51,7 @@ options[:branch] ||= "master"
 puts "Scanning #{ARGV[0]} repo".foreground(:green)
 
 begin
-  fixes, spots = Bugspots.scan(ARGV[0], options[:branch], options[:depth], options[:regex])
+  fixes, spots, diff_spots = Bugspots.scan(ARGV[0], options[:branch], options[:depth], options[:regex], options[:churn])
 
   puts "\tFound #{fixes.size} bugfix commits, with #{spots.size} hotspots:".foreground(:yellow)
   puts
@@ -62,6 +67,12 @@ begin
   puts "\n"
   puts "\tHotspots:".foreground(:green).underline
   spots.each do |spot|
+    puts "\t\t#{spot.score}".foreground(:red) + " - #{spot.file}".foreground(:yellow)
+  end
+
+  puts "\n"
+  puts "\tDiffSpots:".foreground(:green).underline
+  diff_spots.each do |spot|
     puts "\t\t#{spot.score}".foreground(:red) + " - #{spot.file}".foreground(:yellow)
   end
 
