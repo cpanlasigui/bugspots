@@ -10,6 +10,7 @@ module Bugspots
     diff = []
     diff_spots = [];
 
+    repo_dir = repo
     repo = Rugged::Repository.new(repo)
     unless repo.branches.each_name(:local).sort.find { |b| b == branch }
       raise ArgumentError, "no such branch in the repo: #{branch}"
@@ -20,9 +21,9 @@ module Bugspots
     if churn && !repo.branches.each_name(:local).sort.find { |b| b == churn }
       raise ArgumentError, "no such branch in the repo: #{churn}"
     end
-
-    diff = `git diff --name-only origin/master..`.split(/\n/)
-    pp diff
+    diff = Dir.chdir(repo_dir) do
+     `git diff --name-only origin/master..`.split(/\n/)
+    end
 
     walker = Rugged::Walker.new(repo)
     walker.sorting(Rugged::SORT_TOPO)
