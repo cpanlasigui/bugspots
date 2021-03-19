@@ -5,7 +5,8 @@ module Bugspots
   Spot = Struct.new(:file, :percentile, :score)
 
   def self.scan(repo, branch = "master", depth = nil, regex = nil, churn = nil)
-    regex ||= /\b(fix(es|ed)?|close(s|d)?)\b/i
+    # regex ||= /\b(fix(es|ed)?|close(s|d)?)\b/i
+    regex ||= /.+/
     fixes = []
     diff = []
     diff_spots = [];
